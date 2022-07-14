@@ -1,0 +1,77 @@
+server:
+  port: 8990
+  error:
+    #需要加这一段配置 运行时异常才显示异常信息
+    include-exception: true
+    include-message: always
+
+spring:
+  application:
+    name: API-GATEWAY
+
+  redis:
+    #    哨兵模式
+    sentinel:
+      master: mymaster
+      nodes: 106.14.81.28:26379
+    database: 0
+    timeout: 30000
+    lettuce:
+      pool:
+        max-active: 20
+        max-wait: -1
+        max-idle: 5
+        min-idle: 0
+    #        哨兵模式也要配置单节点 ，不然无法缓存
+    host: 106.14.81.28
+    port: 7000
+    password: 1a2b3c
+  cloud:
+    gateway:
+      routes:
+        - id: sysadmin-api
+          uri: lb://API-SYSADMIN
+          predicates:
+            - Path=/admin/admin-user,/admin/tokens/**
+          filters:
+            - StripPrefix=1
+
+        - id: categry-api
+          uri: lb://API-CATEGRY
+          predicates:
+              - Path=/admin/categories/**
+          filters:
+            - StripPrefix=1
+            - Token
+        - id: users-api
+          uri: lb://API-USERS
+          predicates:
+              - Path=/admin/users/**
+          filters:
+            - StripPrefix=1
+            - Token
+
+        - id: videos-api
+          uri: lb://API-VIDEOS
+          predicates:
+              - Path=/admin/videos/**
+          filters:
+            - StripPrefix=1
+            - Token
+      globalcors: # 全局的跨域处理
+        add-to-simple-url-handler-mapping: true # 因为ajax发起者会通过options请求来向服务器询问是否允许跨域，所以需要设置为true来解决options请求被拦截问题
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: # 允许哪些网站的跨域请求
+              - "*"
+            allowedMethods: # 允许的跨域ajax的请求方式
+              - "GET"
+              - "POST"
+              - "DELETE"
+              - "PUT"
+              - "OPTIONS"
+            allowedHeaders: "*" # 允许在请求中携带的头信息
+            allowCredentials: true # 是否允许携带cookie
+            maxAge: 360000 # 这次跨域检测的有效期，即一定时间内就不需要重复询问是否允许跨域了，直接请求即可。
+    nacos:
+      server-addr: 106.14.81.28:8848
